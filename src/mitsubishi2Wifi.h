@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <HeatPump.h>     // SwiCago library: https://github.com/SwiCago/HeatPump
+#include <HeatPump.h>
 
 String getId();
 float convertCelsiusToLocalUnit(float temperature, bool isFahrenheit);
@@ -18,7 +18,7 @@ bool loadUnit();
 bool loadWifi();
 
 bool connectWifi();
-boolean initWifi();
+bool initWifi();
 void handleSaveWifi();
 
 // Web pages

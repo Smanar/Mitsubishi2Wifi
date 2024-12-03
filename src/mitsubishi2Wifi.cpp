@@ -275,6 +275,7 @@ bool loadWifi() {
 
   return true;
 }
+
 bool loadServerSettings() {
   if (!SPIFFS.exists(server_conf)) {
     write_log(F("Server config file not exist!"));
@@ -514,7 +515,7 @@ void setDefaults() {
   ap_pwd  = "";
 }
 
-boolean initWifi() {
+bool initWifi() {
   bool connectWifiSuccess = true;
   if (ap_ssid[0] != '\0') {
     connectWifiSuccess = wifi_config = connectWifi();
@@ -686,7 +687,7 @@ void handleJson() {
         {
           if (settings.power != obj["power"])
           {
-            hp.setPowerSetting(obj["power"].as<bool>());
+            hp.setPowerSetting(strcmp (obj["power"], "on") == 0);
           }
         }
         if (obj.containsKey("mode"))
@@ -1293,6 +1294,12 @@ heatpumpSettings change_states(heatpumpSettings settings) {
 }
 
 void hpSettingsChanged() {
+
+  if (millis() - hp.getLastWanted() < PREVENT_UPDATE_INTERVAL_MS) // prevent application setting change after send update interval we wait for 1 seconds before udpate data
+  {
+    return;
+  }
+
   // send room temp, operating info and all information
   heatpumpSettings currentSettings = hp.getSettings();
 
@@ -1310,6 +1317,12 @@ void hpSettingsChanged() {
 }
 
 void hpStatusChanged(heatpumpStatus currentStatus) {
+
+  if (millis() - hp.getLastWanted() < PREVENT_UPDATE_INTERVAL_MS) // prevent application setting change after send update interval we wait for 1 seconds before udpate data
+  {
+    return;
+  }
+
   if (millis() - lastTempSend > SEND_ROOM_TEMP_INTERVAL_MS)
   {
     // only send the temperature every SEND_ROOM_TEMP_INTERVAL_MS (millis rollover tolerant)
@@ -1540,7 +1553,7 @@ bool connectWifi() {
   wifi_timeout = millis() + 30000;
 
   while (WiFi.status() != WL_CONNECTED && millis() < wifi_timeout) {
-    Serial.write('.');
+    write_log(".");
     //write_log(WiFi.status());
     // wait 500ms, flashing the blue LED to indicate WiFi connecting...
     digitalWrite(blueLedPin, LOW);
@@ -1550,16 +1563,17 @@ bool connectWifi() {
   }
 
   if (WiFi.status() != WL_CONNECTED) {
-    // write_log(F("Failed to connect to wifi"));
+    write_log(F("Failed to connect to wifi"));
     return false;
   }
 
-    while (WiFi.localIP().toString() == "0.0.0.0" || WiFi.localIP().toString() == "") {
-    // Serial.write('.');
+  wifi_timeout = millis() + 5000;
+  while ((WiFi.localIP().toString() == "0.0.0.0" || WiFi.localIP().toString() == "") && millis() < wifi_timeout) {
+    write_log(".");
     delay(500);
   }
   if (WiFi.localIP().toString() == "0.0.0.0" || WiFi.localIP().toString() == "") {
-    // write_log(F("Failed to get IP address"));
+    write_log(F("Failed to get IP address"));
     return false;
   }
 

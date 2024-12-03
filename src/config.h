@@ -68,6 +68,7 @@ uint8_t max_temp                    = 31; // Maximum temperature, in your select
 String temp_step                   = "1"; // Temperature setting step, check value from heatpump remote control
 
 // sketch settings
+const PROGMEM uint32_t PREVENT_UPDATE_INTERVAL_MS = 3000;  // interval to prevent application setting change after send settings to HP
 const PROGMEM uint32_t SEND_ROOM_TEMP_INTERVAL_MS = 90000; // 45 seconds (anything less may cause bouncing)
 const PROGMEM uint32_t CHECK_REMOTE_TEMP_INTERVAL_MS = 300000; //5 minutes
 const PROGMEM uint32_t MQTT_RETRY_INTERVAL_MS = 1000; // 1 second

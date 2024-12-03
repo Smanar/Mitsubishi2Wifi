@@ -19,19 +19,19 @@ const char html_init_setup[] PROGMEM = R"====(
 <fieldset>
     <legend><b>&nbsp; Initial setup &nbsp;</b></legend>
     <form method='post' action='save'>
-        <p><b>_TXT_INIT_HOST_</b>
+        <p><b>Hostname</b>
             <br/>
             <input id='hn' name='hn' placeholder=' ' value='_UNIT_NAME_'>
         </p>
-        <p><b>_TXT_INIT_SSID_</b> ()
+        <p><b>SSID</b> ()
             <br/>
             <input id='ssid' name='ssid' placeholder=' '>
         </p>
-        <p><b>_TXT_INIT_PSK_</b> ()
+        <p><b>Password</b> ()
             <br/>
             <input id='psk' name='psk' placeholder=' '>
         </p>
-        <p><b>_TXT_INIT_OTA_</b>
+        <p><b>OTA Password</b>
             <br/>
             <input id='otapwd' name='otapwd' placeholder=' '>
         </p>
@@ -41,7 +41,7 @@ const char html_init_setup[] PROGMEM = R"====(
     </form>
 </fieldset>
 <fieldset>
-    <a class="button" href="/reboot" class="back"> _TXT_REBOOT_ </a>
+    <a class="button" href="/reboot" class="back"> Reboot </a>
 </fieldset>
 )====";
 
