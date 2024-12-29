@@ -46,7 +46,6 @@ void handleControl();
 
 void handleInitSetup() ;
 
-heatpumpSettings change_states(heatpumpSettings settings);
 void hpStatusChanged(heatpumpStatus currentStatus);
 void hpCheckRemoteTemp();
 void hpSettingsChanged();

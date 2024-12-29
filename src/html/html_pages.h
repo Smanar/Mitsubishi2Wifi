@@ -34,7 +34,7 @@ const char html_page_server[] PROGMEM =
         "<legend><b>&nbsp; Server parameters &nbsp;</b></legend>"
         "<form method='post'>"
             "<p><b>Server Url as http://IP:PORT/</b>"
-                "<br/>"
+                "<br/><br/>"
                 "<input id='url' name='url' "
                 "autocomplete='off' autocorrect='off' autocapitalize='off' spellcheck='false' "
                 "placeholder=' ' value='_SERVER_URL_'>"

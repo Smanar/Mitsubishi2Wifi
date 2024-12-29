@@ -89,6 +89,9 @@ bool SendJson(const JsonVariant);
 //Web OTA
 int uploaderror = 0;
 
+// To be optimised
+String LogString;
+
 void setup() {
   // Start serial for debug before HVAC connect to serial
   Serial.begin(115200);
@@ -665,7 +668,7 @@ void handleSetup() {
 void handleLogs() {
 
   String menuLogsPage = FPSTR(html_menu_logs);
-  menuLogsPage.replace("_LOGS_","Blablabla");
+  menuLogsPage.replace("_LOGS_", LogString);
   sendWrappedHTML(menuLogsPage);
 
 }
@@ -900,8 +903,41 @@ void handleControl()
     return;
   }
 
+  //Update settings if request
   heatpumpSettings settings = hp.getSettings();
-  settings = change_states(settings);
+
+  if (server.hasArg("CONNECT")) {
+    hp.connect(&Serial);
+  }
+  else {
+
+    if (server.hasArg("POWER")) {
+      settings.power = server.arg("POWER").c_str();
+      hp.setPowerSetting(server.arg("POWER") == "ON");
+    }
+    if (server.hasArg("MODE")) {
+      settings.mode = server.arg("MODE").c_str();
+      hp.setModeSetting(server.arg("MODE").c_str());
+    }
+    if (server.hasArg("TEMP")) {
+      settings.temperature = convertLocalUnitToCelsius(server.arg("TEMP").toFloat(), useFahrenheit);
+      hp.setTemperature(server.arg("TEMP").toFloat());
+    }
+    if (server.hasArg("FAN")) {
+      settings.fan = server.arg("FAN").c_str();
+      hp.setFanSpeed(server.arg("FAN").c_str());
+    }
+    if (server.hasArg("VANE")) {
+      settings.vane = server.arg("VANE").c_str();
+      hp.setVaneSetting(server.arg("VANE").c_str());
+    }
+    if (server.hasArg("WIDEVANE")) {
+      settings.wideVane = server.arg("WIDEVANE").c_str();
+      hp.setWideVaneSetting(server.arg("WIDEVANE").c_str());
+    }
+
+  }
+
   String controlPage =  FPSTR(html_page_control);
   String headerContent = FPSTR(html_common_header);
   String footerContent = FPSTR(html_common_footer);
@@ -1265,43 +1301,6 @@ void write_log(String log) {
   Serial.println(log);
 }
 
-heatpumpSettings change_states(heatpumpSettings settings) {
-  if (server.hasArg("CONNECT")) {
-    hp.connect(&Serial);
-  }
-  else {
-    bool update = false;
-    if (server.hasArg("POWER")) {
-      settings.power = server.arg("POWER").c_str();
-      update = true;
-    }
-    if (server.hasArg("MODE")) {
-      settings.mode = server.arg("MODE").c_str();
-      update = true;
-    }
-    if (server.hasArg("TEMP")) {
-      settings.temperature = convertLocalUnitToCelsius(server.arg("TEMP").toFloat(), useFahrenheit);
-      update = true;
-    }
-    if (server.hasArg("FAN")) {
-      settings.fan = server.arg("FAN").c_str();
-      update = true;
-    }
-    if (server.hasArg("VANE")) {
-      settings.vane = server.arg("VANE").c_str();
-      update = true;
-    }
-    if (server.hasArg("WIDEVANE")) {
-      settings.wideVane = server.arg("WIDEVANE").c_str();
-      update = true;
-    }
-    if (update) {
-      hp.setSettings(settings);
-    }
-  }
-  return settings;
-}
-
 void hpSettingsChanged() {
 
   if (millis() - hp.getLastWanted() < PREVENT_UPDATE_INTERVAL_MS) // prevent application setting change after send update interval we wait for 1 seconds before udpate data
@@ -1316,7 +1315,7 @@ void hpSettingsChanged() {
   rootInfo["temperature"]     = convertCelsiusToLocalUnit(currentSettings.temperature, useFahrenheit);
   rootInfo["fan"]             = currentSettings.fan;
   rootInfo["vane"]            = currentSettings.vane;
-  rootInfo["wideVane"]        = currentSettings.wideVane;
+  rootInfo["widevane"]        = currentSettings.wideVane;
   rootInfo["mode"]            = currentSettings.mode;
   rootInfo["power"]           = currentSettings.power;
 
@@ -1350,7 +1349,7 @@ void hpStatusChanged(heatpumpStatus currentStatus) {
     rootInfo["temperature"]         = convertCelsiusToLocalUnit(currentSettings.temperature, useFahrenheit);
     rootInfo["fan"]                 = currentSettings.fan;
     rootInfo["vane"]                = currentSettings.vane;
-    rootInfo["wideVane"]            = currentSettings.wideVane;
+    rootInfo["widevane"]            = currentSettings.wideVane;
     rootInfo["mode"]                = currentSettings.mode;
     rootInfo["power"]               = currentSettings.power;
 */
@@ -1474,7 +1473,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     hp.setVaneSetting(message);
   }
   else if (strcmp(topic, ha_wideVane_set_topic.c_str()) == 0) {
-    rootInfo["wideVane"] = (String) message;
+    rootInfo["widevane"] = (String) message;
     hpSendLocalState();
     hp.setWideVaneSetting(message);
   }
