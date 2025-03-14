@@ -23,6 +23,12 @@ And the device send json to a server when a change happen
 }
 ```
 
+
+## Hardware
+
+On my side I m using ESP32 Wemos D1 Mini, from here https://fr.aliexpress.com/item/32858054775.html direclty powered by the unity, this device can support 3.3V and 5V.   
+
 ## Configuration
 
-Take a look in the platformio.ini, you can found some informations, like other GPIO pin selected.    
+Take a look in the platformio.ini, you can found some informations, like other GPIO pin selected.   
+The code is configured by defaut for the ESP32 Wemos D1 Mini, with wire on GPIO 16 and 17.   
