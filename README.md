@@ -27,6 +27,7 @@ And the device send json to a server when a change happen
 ## Hardware
 
 On my side I m using ESP32 Wemos D1 Mini, from here https://fr.aliexpress.com/item/32858054775.html direclty powered by the unity, this device can support 3.3V and 5V.   
+You can found a french tutorial here https://www.domotique-fibaro.fr/topic/16280-quick-app-pilotage-climatisation-pac-mitsubishi-en-local-avec-esp32/
 
 ## Configuration
 
