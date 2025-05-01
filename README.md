@@ -6,7 +6,7 @@ This component version is based on https://github.com/gysmo38/mitsubishi2MQTT
 
 You still can use the embedded webserver for configuration and communication
 
-</br>
+<p align="center">
   <img src="https://raw.githubusercontent.com/Smanar/Ressources/refs/heads/main/pictures/mitsubishi_CN105.png">
 </p>
 
