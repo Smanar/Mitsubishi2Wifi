@@ -4,7 +4,13 @@ This component version is based on https://github.com/gysmo38/mitsubishi2MQTT
 
 ## Description   
 
-You still can use the embedded webserver for configuration and communication, but can use json to send command, using the endpoint /json.   
+You still can use the embedded webserver for configuration and communication
+
+</br>
+  <img src="https://raw.githubusercontent.com/Smanar/Ressources/refs/heads/main/pictures/mitsubishi_CN105.png">
+</p>
+
+But can use json to send command, using the endpoint /json.   
 ```
 curl http://127.0.0.1:81/json -X POST -d '{"power": "on"}'
 ```
