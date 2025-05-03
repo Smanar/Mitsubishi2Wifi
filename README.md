@@ -39,3 +39,10 @@ You can found a french tutorial here https://www.domotique-fibaro.fr/topic/16280
 
 Take a look in the platformio.ini, you can found some informations, like other GPIO pin selected.   
 The code is configured by defaut for the ESP32 Wemos D1 Mini, with wire on GPIO 16 and 17.   
+
+On first launch, you will be able to connect to the device using for exemple your smartphone, using Wifi:   
+- Connect to AP called HVAC_XXXX (XXXX last 4 character MAC address).
+- Go to url http://192.168.1.1
+- Set your Wifi setting, save & reboot.
+
+The device will now connect to your Wifi network.   
