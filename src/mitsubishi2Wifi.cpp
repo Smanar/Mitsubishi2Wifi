@@ -1,6 +1,9 @@
 /*
-  mitsubishi2mqtt - Mitsubishi Heat Pump to MQTT control for Home Assistant.
-  Copyright (c) 2022 gysmo38, dzungpv, shampeon, endeavour, jascdk, chrdavis, alekslyse.  All right reserved.
+  mitsubishi2Wifi Copyright (c) 2024 Smanar
+
+  Based on mitsubishi2mqtt Copyright (c) 2022 gysmo38, dzungpv, shampeon, endeavour,
+  jascdk, chrdavis, alekslyse. All rights reserved.
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -25,20 +28,22 @@
 #include <ESPmDNS.h>          // mDNS for ESP32
 #include <WebServer.h>        // webServer for ESP32
 #include <HTTPClient.h>
-#if 0
-    #include "SPIFFS.h"           // ESP32 SPIFFS for store config
-#else
-    #include <LittleFS.h>
-    #define SPIFFS LittleFS
-#endif
 WebServer server(80);         //ESP32 web
 #else
 #include <ESP8266WiFi.h>      // WIFI for ESP8266
 #include <WiFiClient.h>
 #include <ESP8266mDNS.h>      // mDNS for ESP8266
 #include <ESP8266WebServer.h> // webServer for ESP8266
-#include <HTTPClient.h>
+#include <ESP8266HTTPClient.h> // webClient for ESP8266
 ESP8266WebServer server(80);  // ESP8266 web
+#endif
+
+//Because SPIFFS is obsolette
+#if 0
+    #include "SPIFFS.h"           // ESP32 SPIFFS for store config
+#else
+    #include <LittleFS.h>
+    #define SPIFFS LittleFS
 #endif
 
 #include <ArduinoJson.h>      // json to process MQTT: ArduinoJson 6.11.4
@@ -117,12 +122,20 @@ void setup() {
     ticker.attach(0.6, tick);
   */
 
-  //Define hostname
-  hostname += hostnamePrefix;
+  //Define defaut hostname
+  hostname = hostnamePrefix;
   hostname += getId();
 
-  setDefaults();
+  setWIFIDefaults();
   wifi_config_exists = loadWifi();
+
+//Workaround for not working device in Access point
+#if defined(WIFIPASSWORD) && defined(WIFISSID)
+    write_log(F("Force SSID and Password."));
+    saveWifi(WIFISSID,WIFIPASSWORD,"ForcedHVAC","");
+    wifi_config_exists = loadWifi();
+#endif
+
   if (!wifi_config_exists)
   {
     write_log(F("Can't load Wifi settings"));
@@ -196,12 +209,14 @@ void setup() {
     write_log(F("Connection to HVAC. Stop serial log."));
     write_log(F("\n\n\n"));
 
+    // Used for Auto Update
     hp.setSettingsChangedCallback(hpSettingsChanged); // Called when Settings are changed
     hp.setStatusChangedCallback(hpStatusChanged); // Called when Status is changed
     hp.setPacketCallback(hpPacketDebug); // Called to output debug
 
     // Allow Remote/Panel
     hp.enableExternalUpdate();
+    // Enable auto update
     hp.enableAutoUpdate();
 
     // Connection
@@ -217,12 +232,12 @@ void setup() {
   }
   else
   {
-    // Wifi not configured, launch AP mode
-
-    write_log(F("Launch the device in AP mode."));
-
-    dnsServer.start(DNS_PORT, "*", apIP);
-    initCaptivePortal();
+    server.on("/", handleInitSetup);
+    server.on("/save", handleSaveWifi);
+    server.on("/reboot", handleReboot);
+    server.onNotFound(handleNotFound);
+    server.begin();
+    captive = true;
   }
 
   initOTA();
@@ -236,7 +251,19 @@ bool SendJson(const JsonVariant j) {
   http.setTimeout(2000);
   http.begin(espClient, server_url.c_str());
   http.addHeader("Content-Type", "application/json");
+  //http.addHeader("Accept-Encoding", "identity");
   int httpResponseCode = http.POST(s);
+
+  //http.beginRequest();
+  //http.post("/");
+  //http.sendHeader("Content-Type", "application/json");
+  //http.sendHeader("Content-Length", s.length());
+  //http.beginBody();
+  //http.print(s);
+  //http.endRequest();
+
+  //Wait to be sure data are send, because end() force a clear
+  delay(500);
 
   http.end();
 
@@ -485,18 +512,6 @@ void saveOthers(String haa, String haat, String debugPckts, String debugLogs) {
   configFile.close();
 }
 
-// Initialize captive portal page
-void initCaptivePortal() {
-  // write_log(F("Starting captive portal"));
-  server.on("/", handleInitSetup);
-  server.on("/save", handleSaveWifi);
-  server.on("/reboot", handleReboot);
-  server.onNotFound(handleNotFound);
-  server.begin();
-  captive = true;
-}
-
-
 // Enable OTA only when connected as a client.
 void initOTA() {
   //write_log("Start OTA Listener");
@@ -523,14 +538,18 @@ void initOTA() {
   });
   ArduinoOTA.begin();
 }
-void setDefaults() {
+
+void setWIFIDefaults() {
   ap_ssid = "";
   ap_pwd  = "";
 }
 
 bool initWifi() {
   bool connectWifiSuccess = true;
-  if (ap_ssid[0] != '\0') {
+
+  //If we have connection setting
+  if (ap_ssid[0] != '\0')
+  {
     connectWifiSuccess = wifi_config = connectWifi();
     if (connectWifiSuccess) {
       return true;
@@ -546,7 +565,7 @@ bool initWifi() {
   // write_log(F("\n\r \n\rStarting in AP mode"));
   WiFi.mode(WIFI_AP);
   wifi_timeout = millis() + WIFI_RETRY_INTERVAL_MS;
-  WiFi.persistent(false); //fix crash esp32 https://github.com/espressif/arduino-esp32/issues/2025
+  //WiFi.persistent(false); //fix crash esp32 https://github.com/espressif/arduino-esp32/issues/2025
   WiFi.softAPConfig(apIP, apIP, netMsk);
   if (!connectWifiSuccess and login_password != "") {
     // Set AP password when falling back to AP on fail
@@ -558,10 +577,16 @@ bool initWifi() {
   }
   delay(2000); // VERY IMPORTANT
 
-  // write_log(F("IP address: "));
-  // write_log(WiFi.softAPIP());
+  //write_log(F("IP address: "));
+  //Serial.println(WiFi.softAPIP());
+
   //ticker.attach(0.2, tick); // Start LED to flash rapidly to indicate we are ready for setting up the wifi-connection (entered captive portal).
   wifi_config = false;
+
+  write_log(F("Launch the device in AP mode."));
+
+  dnsServer.start(DNS_PORT, "*", apIP);
+
   return false;
 }
 
@@ -681,8 +706,9 @@ void rebootAndSendPage() {
     ESP.restart();
 }
 
+String Page;
 void handleJson() {
-  String Page = "{\"return\":\"ok\"}";
+  Page = "{\"return\":\"ok\"}";
 
   if (server.method() == HTTP_POST) {
     DynamicJsonDocument doc(JSON_OBJECT_SIZE(4) + 200);
@@ -696,6 +722,18 @@ void handleJson() {
 
         heatpumpSettings settings = hp.getSettings();
 
+        if (obj.containsKey("command"))
+        {
+          if (obj["command"] == "update")
+          {
+            hpSettingsChanged();
+            return;
+          }
+          if (obj["command"] == "reboot")
+          {
+            return;
+          }
+        }
         if (obj.containsKey("power"))
         {
           if (settings.power != obj["power"])
@@ -748,7 +786,6 @@ void handleJson() {
 
     }
   }
-
 
   server.send(200, F("application/json; charset=utf-8"), Page);
 }
@@ -1061,7 +1098,7 @@ void handleMetrics(){
   heatpumpSettings currentSettings = hp.getSettings();
   heatpumpStatus currentStatus = hp.getStatus();
 
-  String hppower = currentSettings.power == "ON" ? "1" : "0";
+  String hppower = (strcmp( currentSettings.power, "ON") == 0) ? "1" : "0";
 
   String hpfan = currentSettings.fan;
   if(hpfan == "AUTO") hpfan = "-1";
@@ -1072,20 +1109,20 @@ void handleMetrics(){
   if(hpvane == "SWING") hpvane = "0";
 
   String hpwidevane = "-2";
-  if(currentSettings.wideVane == "SWING") hpwidevane = "0";
-  if(currentSettings.wideVane == "<<") hpwidevane = "1";
-  if(currentSettings.wideVane == "<") hpwidevane = "2";
-  if(currentSettings.wideVane == "|") hpwidevane = "3";
-  if(currentSettings.wideVane == ">") hpwidevane = "4";
-  if(currentSettings.wideVane == ">>") hpwidevane = "5";
-  if(currentSettings.wideVane == "<>") hpwidevane = "6";
+  if (strcmp(currentSettings.wideVane, "SWING")) hpwidevane = "0";
+  if (strcmp(currentSettings.wideVane, "<<")) hpwidevane =  "1";
+  if (strcmp(currentSettings.wideVane, "<")) hpwidevane = "2";
+  if (strcmp(currentSettings.wideVane, "|")) hpwidevane = "3";
+  if (strcmp(currentSettings.wideVane, ">")) hpwidevane = "4";
+  if (strcmp(currentSettings.wideVane, ">>")) hpwidevane = "5";
+  if (strcmp(currentSettings.wideVane, "<>")) hpwidevane = "6";
 
   String hpmode = "-2";
-  if(currentSettings.mode == "AUTO") hpmode = "-1";
-  if(currentSettings.mode == "COOL") hpmode = "1";
-  if(currentSettings.mode == "DRY") hpmode = "2";
-  if(currentSettings.mode == "HEAT") hpmode = "3";
-  if(currentSettings.mode == "FAN") hpmode = "4";
+  if (strcmp(currentSettings.mode, "AUTO")) hpmode = "-1";
+  if (strcmp(currentSettings.mode, "COOL")) hpmode = "1";
+  if (strcmp(currentSettings.mode, "DRY")) hpmode = "2";
+  if (strcmp(currentSettings.mode, "HEAT")) hpmode = "3";
+  if (strcmp(currentSettings.mode, "FAN")) hpmode = "4";
   if(hppower == "0") hpmode = "0";
 
   metrics.replace("_UNIT_NAME_", hostname);
@@ -1337,7 +1374,7 @@ void hpStatusChanged(heatpumpStatus currentStatus) {
     hpCheckRemoteTemp(); // if the remote temperature feed from mqtt is stale, disable it and revert to the internal thermometer.
 
     // send room temp, operating info and all information
-    heatpumpSettings currentSettings = hp.getSettings();
+    //heatpumpSettings currentSettings = hp.getSettings();
 
     if (currentStatus.roomTemperature == 0) return;
 
@@ -1585,8 +1622,8 @@ bool connectWifi() {
     return false;
   }
 
-  write_log(F("\nConnected with IP address: "));
-  write_log(WiFi.localIP().toString());
+  //write_log(F("\nConnected with IP address: "));
+  //write_log(WiFi.localIP().toString());
 
   //ticker.detach(); // Stop blinking the LED because now we are connected:)
   //keep LED off (For Wemos D1-Mini)
@@ -1721,7 +1758,8 @@ void loop() {
 	  ESP.restart();
   }
 
-  if (!captive) {
+  if (!captive)
+  {
     // Sync HVAC UNIT
     if (!hp.isConnected())
     {
@@ -1743,7 +1781,8 @@ void loop() {
     }
 
   }
-  else {
+  else
+  {
     dnsServer.processNextRequest();
   }
 }

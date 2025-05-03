@@ -7,15 +7,15 @@ float convertLocalUnitToCelsius(float temperature, bool isFahrenheit);
 String getTemperatureScale();
 void write_log(String log);
 
-void setDefaults();
+void setWIFIDefaults();
 bool checkLogin();
 bool is_authenticated();
 void initOTA();
-void initCaptivePortal();
 
 bool loadOthers();
 bool loadUnit();
 bool loadWifi();
+void saveWifi(String apSsid, String apPwd, String hostName, String otaPwd);
 
 bool connectWifi();
 bool initWifi();

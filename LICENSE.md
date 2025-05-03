@@ -1,4 +1,8 @@
-# mitsubishi2mqtt - Mitsubishi Heat Pump to MQTT control for Home Assistant.
+# mitsubishi2Wifi Copyright (c) 2024 Smanar
+#  Based on mitsubishi2mqtt Copyright (c) 2022 gysmo38, dzungpv, shampeon, endeavour,
+#  jascdk, chrdavis, alekslyse. All rights reserved.
+
+
 
                   GNU LESSER GENERAL PUBLIC LICENSE
                        Version 2.1, February 1999

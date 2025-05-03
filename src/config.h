@@ -1,6 +1,9 @@
 /*
-  mitsubishi2mqtt - Mitsubishi Heat Pump to MQTT control for Home Assistant.
-  Copyright (c) 2022 gysmo38, dzungpv, shampeon, endeavour, jascdk, chrdavis, alekslyse.  All right reserved.
+  mitsubishi2Wifi Copyright (c) 2024 Smanar
+
+  Based on mitsubishi2mqtt Copyright (c) 2022 gysmo38, dzungpv, shampeon, endeavour,
+  jascdk, chrdavis, alekslyse. All rights reserved.
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -13,6 +16,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
+
 
 const PROGMEM char* m2wifi_version = "2024.0.0";
 
@@ -67,7 +71,7 @@ String temp_step                   = "1"; // Temperature setting step, check val
 
 // sketch settings
 const PROGMEM uint32_t PREVENT_UPDATE_INTERVAL_MS = 3000;  // interval to prevent application setting change after send settings to HP
-const PROGMEM uint32_t SEND_ROOM_TEMP_INTERVAL_MS = 90000; // 45 seconds (anything less may cause bouncing)
+const PROGMEM uint32_t SEND_ROOM_TEMP_INTERVAL_MS = 300000; // 5 mn, anything less than 45 seconds may cause bouncing
 const PROGMEM uint32_t CHECK_REMOTE_TEMP_INTERVAL_MS = 300000; //5 minutes
 const PROGMEM uint32_t MQTT_RETRY_INTERVAL_MS = 1000; // 1 second
 const PROGMEM uint32_t HP_RETRY_INTERVAL_MS = 1000; // 1 second
