@@ -38,6 +38,7 @@ const PROGMEM char* others_conf = "others.json";
 // pinouts
 const PROGMEM  uint8_t blueLedPin = LED_BUILTIN; // Onboard LED = digital pin 2 "D4" (blue LED on WEMOS D1-Mini)
 #endif
+
 const PROGMEM  uint8_t redLedPin = 0;
 
 // Define global variables for network

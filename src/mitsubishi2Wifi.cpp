@@ -197,15 +197,6 @@ void setup() {
     hpConnectionRetries = 0;
     hpConnectionTotalRetries = 0;
 
-#if 0
-    //Debug part
-    const size_t bufferSize = JSON_OBJECT_SIZE(10);
-    StaticJsonDocument<bufferSize> root;
-    root["test"] = "ok";
-    SendJson(root);
-    write_log(F("Debug finished."));
-#endif
-
     write_log(F("Connection to HVAC. Stop serial log."));
     write_log(F("\n\n\n"));
 
@@ -565,7 +556,7 @@ bool initWifi() {
   // write_log(F("\n\r \n\rStarting in AP mode"));
   WiFi.mode(WIFI_AP);
   wifi_timeout = millis() + WIFI_RETRY_INTERVAL_MS;
-  //WiFi.persistent(false); //fix crash esp32 https://github.com/espressif/arduino-esp32/issues/2025
+  WiFi.persistent(false); //fix crash esp32 https://github.com/espressif/arduino-esp32/issues/2025
   WiFi.softAPConfig(apIP, apIP, netMsk);
   if (!connectWifiSuccess and login_password != "") {
     // Set AP password when falling back to AP on fail
@@ -1743,10 +1734,24 @@ bool checkLogin() {
   return true;
 }
 
+//long lastdebugtimer;
+
 //Main loop
 void loop() {
   server.handleClient();
   ArduinoOTA.handle();
+
+#if 0
+  //debug part
+  if (millis() - lastdebugtimer > 5000)
+  {
+    lastdebugtimer = millis();
+    const size_t bufferSize = JSON_OBJECT_SIZE(10);
+    StaticJsonDocument<bufferSize> root;
+    root["test"] = "ok";
+    SendJson(root);
+  }
+#endif
 
   //reset board to attempt to connect to wifi again if in ap mode or wifi dropped out and time limit passed
   if (WiFi.getMode() == WIFI_STA and WiFi.status() == WL_CONNECTED)
