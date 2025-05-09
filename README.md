@@ -46,3 +46,5 @@ On first launch, you will be able to connect to the device using for exemple you
 - Set your Wifi setting, save & reboot.
 
 The device will now connect to your Wifi network.   
+
+If you have problems, for exemple on my side the access point not working with WEMOS_D1_Mini_Pro, so you can set your SSID and your password in the platformio.ini file, data will be stored on the ddevice, so you can remove (or re-comment) thoses lines after the first run.   
