@@ -54,6 +54,7 @@ ESP8266WebServer server(80);  // ESP8266 web
 
 #include <ArduinoOTA.h>   // for OTA
 //#include <Ticker.h>     // for LED status (Using a Wemos D1-Mini)
+//void tick(); // led blink tick
 
 #include "config.h"             // config file
 #include "html/html_common.h"        // common code HTML (like header, footer)
@@ -97,6 +98,8 @@ int uploaderror = 0;
 // To be optimised
 String LogString;
 
+const char compile_date[] = __DATE__ " " __TIME__;
+
 void setup() {
   // Start serial for debug before HVAC connect to serial
   Serial.begin(115200);
@@ -118,9 +121,8 @@ void setup() {
 
   //set led pin as output
   pinMode(blueLedPin, OUTPUT);
-  /*
-    ticker.attach(0.6, tick);
-  */
+  //Blink every second
+  //ticker.attach(1, tick);
 
   //Define defaut hostname
   hostname = hostnamePrefix;
@@ -199,6 +201,7 @@ void setup() {
 
     write_log(F("Connection to HVAC. Stop serial log."));
     write_log(F("\n\n\n"));
+    delay(1000);
 
     // Used for Auto Update
     hp.setSettingsChangedCallback(hpSettingsChanged); // Called when Settings are changed
@@ -211,8 +214,13 @@ void setup() {
     hp.enableAutoUpdate();
 
     // Connection
+#if defined(ESP32)
 #ifdef RX_PIN
     hp.connect(&Serial, RX_PIN, TX_PIN);
+#else
+    hp.connect(&Serial);
+#endif
+    //esp_log_level_set("*", ESP_LOG_NONE); // disable all logs because we use UART0 connect to HP
 #else
     hp.connect(&Serial);
 #endif
@@ -233,6 +241,13 @@ void setup() {
 
   initOTA();
 
+}
+
+void tick()
+{
+  // toggle state
+  int state = digitalRead(blueLedPin); // get the current state of GPIO2 pin
+  digitalWrite(blueLedPin, !state);    // set pin to the opposite state
 }
 
 bool SendJson(const JsonVariant j) {
@@ -556,9 +571,12 @@ bool initWifi() {
   // write_log(F("\n\r \n\rStarting in AP mode"));
   WiFi.mode(WIFI_AP);
   wifi_timeout = millis() + WIFI_RETRY_INTERVAL_MS;
-  WiFi.persistent(false); //fix crash esp32 https://github.com/espressif/arduino-esp32/issues/2025
-  WiFi.softAPConfig(apIP, apIP, netMsk);
-  if (!connectWifiSuccess and login_password != "") {
+#ifdef ESP32
+  WiFi.persistent(false); // fix crash esp32 https://github.com/espressif/arduino-esp32/issues/2025
+#endif
+
+  if (!connectWifiSuccess and login_password != "")
+  {
     // Set AP password when falling back to AP on fail
     WiFi.softAP(hostname.c_str(), login_password.c_str());
   }
@@ -566,6 +584,9 @@ bool initWifi() {
     // First time setup does not require password
     WiFi.softAP(hostname.c_str());
   }
+
+  delay(2000); // VERY IMPORTANT
+  WiFi.softAPConfig(apIP, apIP, netMsk);
   delay(2000); // VERY IMPORTANT
 
   //write_log(F("IP address: "));
@@ -912,6 +933,7 @@ void handleStatus() {
   heap += String(percentageHeapFree);
   heap += "% )";
   statusPage.replace(F("_FREE_HEAP_"), heap);
+  statusPage.replace(F("_COMPIL_DATE_"), compile_date);
   statusPage.replace(F("_BOOT_TIME_"), "<font color='orange'><b>" + getUpTime() + "</b></font>");
 
   sendWrappedHTML(statusPage);
@@ -1325,8 +1347,10 @@ void write_log(String log) {
   //File logFile = SPIFFS.open(console_file, "a");
   //logFile.println(log);
   //logFile.close();
-
-  Serial.println(log);
+  if (!hp.isConnected())
+  {
+    Serial.println(log);
+  }
 }
 
 void hpSettingsChanged() {
@@ -1579,11 +1603,15 @@ bool connectWifi() {
 #endif
   if (WiFi.getMode() != WIFI_STA) {
     WiFi.mode(WIFI_STA);
-    delay(10);
+    delay(100);
   }
+
 #ifdef ESP32
-  WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
+  WiFi.config((uint32_t)0, (uint32_t)0, (uint32_t)0);
+#else
+  WiFi.config(0, 0, 0);
 #endif
+
   WiFi.begin(ap_ssid.c_str(), ap_pwd.c_str());
   write_log("Connecting to " + ap_ssid);
   wifi_timeout = millis() + 30000;
@@ -1617,9 +1645,14 @@ bool connectWifi() {
   //write_log(WiFi.localIP().toString());
 
   //ticker.detach(); // Stop blinking the LED because now we are connected:)
+
   //keep LED off (For Wemos D1-Mini)
-  
   digitalWrite(blueLedPin, HIGH);
+
+  // Auto reconnected
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(true);
+
   return true;
 }
 
@@ -1737,7 +1770,8 @@ bool checkLogin() {
 //long lastdebugtimer;
 
 //Main loop
-void loop() {
+void loop()
+{
   server.handleClient();
   ArduinoOTA.handle();
 
