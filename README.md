@@ -10,7 +10,7 @@ You still can use the embedded webserver for configuration and communication
   <img src="https://raw.githubusercontent.com/Smanar/Ressources/refs/heads/main/pictures/mitsubishi_CN105.png">
 </p>
 
-But can use json to send command, using the endpoint /json.   
+But can be used with third app like NodeRED, you can use json to send command, using the endpoint /json.   
 ```
 curl http://127.0.0.1:81/json -X POST -d '{"power": "on"}'
 ```
@@ -32,8 +32,14 @@ And the device send json to a server when a change happen
 
 ## Hardware
 
-On my side I m using ESP32 Wemos D1 Mini, from here https://fr.aliexpress.com/item/32858054775.html direclty powered by the unity, this device can support 3.3V and 5V.   
+On my side I m using ESP32 Wemos D1 Mini, from here https://fr.aliexpress.com/item/32858054775.html direclty powered by the unity, this device can support 3.3V and 5V, so we don't need the resitors.      
 You can found a french tutorial here https://www.domotique-fibaro.fr/topic/16280-quick-app-pilotage-climatisation-pac-mitsubishi-en-local-avec-esp32/
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Smanar/Ressources/refs/heads/main/pictures/mitsubishi.png">
+</p>
+
+Just take care at GPIO wiring, according to code.
 
 ## Configuration
 
